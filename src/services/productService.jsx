@@ -2,7 +2,7 @@ import axiosClient from "./interceptor";
 import mockData from "./mockData";
 
 const { mockCategories, mockProducts } = mockData;
-const isMock = true;
+const isMock = false;
 const pageSize = 6;
 
 export const productService = {

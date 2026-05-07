@@ -2,7 +2,7 @@ import axiosClient from "./interceptor";
 import mockData from "./mockData";
 
 const { mockCategories } = mockData;
-const isMock = true;
+const isMock = false;
 
 export const categoryService = {
   getListCategory(lang) {

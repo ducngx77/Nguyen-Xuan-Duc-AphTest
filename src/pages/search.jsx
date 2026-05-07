@@ -13,12 +13,17 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { SearchOutlined } from "@ant-design/icons";
+import { productService } from "../services/productService";
+import ProductCard from "../components/product/ProductCard";
+import { useSelector } from "react-redux";
 
 function SearchScreen() {
   // Bỏ cmt nếu bạn sử dụng phần này
   // const { productCategory } = useSelector((state) => state.category);
 
   const query = new URLSearchParams(useLocation().search);
+  // const [textSearch, setTextSearch] = useState();
+
   const textSearch = query.get("query");
 
   const [form] = Form.useForm();
@@ -28,10 +33,13 @@ function SearchScreen() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
 
+    fetchSearchProducts();
     /* VIẾT CODE CỦA BẠN VÀO ĐÂY */
-  }, []);
+  }, [textSearch]);
+
 
   const onValuesChange = (changedValues, allValues) => {
+    setFilterData(allValues);
     const hasValue = Object.values(allValues).some((value) => value);
     setSubmitDisabled(!hasValue);
   };
@@ -54,7 +62,41 @@ function SearchScreen() {
       }
     });
 
-    /* VIẾT CODE CỦA BẠN VÀO ĐÂY */
+    fetchFilterProducts();
+  };
+
+  /* VIẾT CODE CỦA BẠN VÀO ĐÂY */
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [filters, setFilters] = useState([]);
+  const [page, setPage] = useState(1);
+  const [itemPerPage] = useState(6);
+  const { lang } = useSelector((state) => state.lang);
+  const [currentKeySearch, setCurrentKeySearch] = useState([]);
+
+  const fetchSearchProducts = async () => {
+    try {
+      const response = await productService.searchProducts(lang, textSearch);
+      setProducts(response.data.products);
+      setCategories(response.data.categories);
+      setFilters(Object.values(response.data.filters));
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+    }
+  };
+
+  const fetchFilterProducts = async () => {
+    try {
+      if (filterData && (filterData.textSearch || filterData.categories || filterData.filters)){
+        const response = await productService.filterSearchProduct(lang, filterData?.textSearch, filterData?.categories, page);
+        setProducts(response.data.products);
+        if (filterData.textSearch){
+          setCurrentKeySearch(filterData.textSearch);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+    }
   };
 
   const clearFilters = () => {
@@ -105,7 +147,7 @@ function SearchScreen() {
                         ),
                       },
                       {
-                        title: <span className="active-bread">Search</span>,
+                        title: <span className="active-bread ">Search</span>,
                       },
                     ]}
                     id="breadcrumb"
@@ -159,7 +201,8 @@ function SearchScreen() {
                           <Input
                             placeholder="Search Products"
                             className="_8jji"
-                            suffix={<SearchOutlined />}
+                            suffix={<SearchOutlined
+                            />}
                           />
                         </Form.Item>
                       </div>
@@ -170,12 +213,45 @@ function SearchScreen() {
                         className="widget_product_categories"
                       >
                         <Checkbox.Group className="form-group">
-                          <Checkbox value={1}>Consumer Packaging</Checkbox>
-                          <Checkbox value={2}>Industrial Packaging</Checkbox>
+                          {categories &&
+                            categories.map((category) => (
+                              <Checkbox key={category.id} value={category.id}>
+                                {category.categoryName}
+                              </Checkbox>
+                            ))}
+                          {/* <Checkbox value={1}>Consumer Packaging</Checkbox>
+                          <Checkbox value={2}>Industrial Packaging</Checkbox> */}
                         </Checkbox.Group>
                       </Form.Item>
 
-                      <Form.Item
+                      {filters &&
+                        filters.map((filter) => (
+                          <Form.Item
+                            key={filter.id}
+                            label={filter.filterName}
+                            name={["filters", filter.id]}
+                            className="widget_product_categories"
+                          >
+                            {filter.type === "checkbox" && (
+                              <Checkbox.Group className="form-group">
+                                {filter.listOption.split(",").map((option) => (
+                                  <Checkbox key={option} value={option}>
+                                    {option}
+                                  </Checkbox>
+                                ))}
+                              </Checkbox.Group>
+                            )}
+                            {filter.type === "range" && (
+                              <Slider
+                                min={parseInt(filter.listOption.split(",")[0])}
+                                max={parseInt(filter.listOption.split(",")[1])}
+                                range
+                              />
+                            )}
+                          </Form.Item>
+                        ))}
+
+                      {/* <Form.Item
                         label="Type of"
                         className="widget_product_categories"
                       >
@@ -212,7 +288,7 @@ function SearchScreen() {
                           <Checkbox value="Yes">Yes</Checkbox>
                           <Checkbox value="No">No</Checkbox>
                         </Checkbox.Group>
-                      </Form.Item>
+                      </Form.Item> */}
 
                       {!isSubmitDisabled && (
                         <Button
@@ -230,9 +306,152 @@ function SearchScreen() {
               <Col span={18}>
                 <div className="product_cate">
                   <div className="_7mkr">
-                    <h2 className="_3rac">Keyword: &quot;{textSearch}&quot;</h2>
+                    <h2 className="_3rac">Keyword: &quot;{(currentKeySearch && currentKeySearch.length > 0 )? currentKeySearch : textSearch}&quot;</h2>
                   </div>
-                  <div className="products">
+                  <Row className="products" gutter={[18, 18]}>
+                    {products &&
+                      products.map((product) => (
+                        <Col key={product.id} span={8}>
+                          <ProductCard
+                            prodName={product.prodName}
+                            thumb={product.thumb}
+                            sku={product.sku}
+                            slug={product.slug}
+                          />
+                        </Col>
+                      ))}
+
+                    {/* <div className="products">
+                    <div className="col has-hover product">
+                      <div className="col-inner">
+                        <div className="box-product has-hover">
+                          <div className="box-image customer-box-image-product">
+                            <a href="#" className="_1gqs block image-zoom">
+                              <img
+                                src="/images/website/product-list_1.png"
+                                className="_8wjh"
+                              />
+                            </a>
+                          </div>
+                          <div className="box-text box-text-products text-left">
+                            <div className="title-wrapper">
+                              <h4 className="product-title">
+                                <a href="#" className="product_link">
+                                  Food Wrap
+                                </a>
+                              </h4>
+                              <p className="sku">
+                                SKU: <span>036897488221-2</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div> */}
+                    {/* <div className="col has-hover product">
+                      <div className="col-inner">
+                        <div className="box-product has-hover">
+                          <div className="box-image customer-box-image-product">
+                            <a href="#" className="_1gqs block image-zoom">
+                              <img
+                                src="/images/website/product-list_2.png"
+                                className="_8wjh"
+                              />
+                            </a>
+                          </div>
+                          <div className="box-text box-text-products text-left">
+                            <div className="title-wrapper">
+                              <h4 className="product-title">
+                                <a href="#" className="product_link">
+                                  Overlock Jumbo bag
+                                </a>
+                              </h4>
+                              <p className="sku">
+                                SKU: <span>036897488221-2</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col has-hover product">
+                      <div className="col-inner">
+                        <div className="box-product has-hover">
+                          <div className="box-image customer-box-image-product">
+                            <a href="#" className="_1gqs block image-zoom">
+                              <img
+                                src="/images/website/product-list_1.png"
+                                className="_8wjh"
+                              />
+                            </a>
+                          </div>
+                          <div className="box-text box-text-products text-left">
+                            <div className="title-wrapper">
+                              <h4 className="product-title">
+                                <a href="#" className="product_link">
+                                  Food Wrap
+                                </a>
+                              </h4>
+                              <p className="sku">
+                                SKU: <span>036897488221-2</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col has-hover product">
+                      <div className="col-inner">
+                        <div className="box-product has-hover">
+                          <div className="box-image customer-box-image-product">
+                            <a href="#" className="_1gqs block image-zoom">
+                              <img
+                                src="/images/website/product-list_2.png"
+                                className="_8wjh"
+                              />
+                            </a>
+                          </div>
+                          <div className="box-text box-text-products text-left">
+                            <div className="title-wrapper">
+                              <h4 className="product-title">
+                                <a href="#" className="product_link">
+                                  Overlock Jumbo bag
+                                </a>
+                              </h4>
+                              <p className="sku">
+                                SKU: <span>036897488221-2</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col has-hover product">
+                      <div className="col-inner">
+                        <div className="box-product has-hover">
+                          <div className="box-image customer-box-image-product">
+                            <a href="#" className="_1gqs block image-zoom">
+                              <img
+                                src="/images/website/product-list_2.png"
+                                className="_8wjh"
+                              />
+                            </a>
+                          </div>
+                          <div className="box-text box-text-products text-left">
+                            <div className="title-wrapper">
+                              <h4 className="product-title">
+                                <a href="#" className="product_link">
+                                  Overlock Jumbo bag
+                                </a>
+                              </h4>
+                              <p className="sku">
+                                SKU: <span>036897488221-2</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <div className="col has-hover product">
                       <div className="col-inner">
                         <div className="box-product has-hover">
@@ -336,143 +555,14 @@ function SearchScreen() {
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="col has-hover product">
-                      <div className="col-inner">
-                        <div className="box-product has-hover">
-                          <div className="box-image customer-box-image-product">
-                            <a href="#" className="_1gqs block image-zoom">
-                              <img
-                                src="/images/website/product-list_2.png"
-                                className="_8wjh"
-                              />
-                            </a>
-                          </div>
-                          <div className="box-text box-text-products text-left">
-                            <div className="title-wrapper">
-                              <h4 className="product-title">
-                                <a href="#" className="product_link">
-                                  Overlock Jumbo bag
-                                </a>
-                              </h4>
-                              <p className="sku">
-                                SKU: <span>036897488221-2</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col has-hover product">
-                      <div className="col-inner">
-                        <div className="box-product has-hover">
-                          <div className="box-image customer-box-image-product">
-                            <a href="#" className="_1gqs block image-zoom">
-                              <img
-                                src="/images/website/product-list_1.png"
-                                className="_8wjh"
-                              />
-                            </a>
-                          </div>
-                          <div className="box-text box-text-products text-left">
-                            <div className="title-wrapper">
-                              <h4 className="product-title">
-                                <a href="#" className="product_link">
-                                  Food Wrap
-                                </a>
-                              </h4>
-                              <p className="sku">
-                                SKU: <span>036897488221-2</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col has-hover product">
-                      <div className="col-inner">
-                        <div className="box-product has-hover">
-                          <div className="box-image customer-box-image-product">
-                            <a href="#" className="_1gqs block image-zoom">
-                              <img
-                                src="/images/website/product-list_2.png"
-                                className="_8wjh"
-                              />
-                            </a>
-                          </div>
-                          <div className="box-text box-text-products text-left">
-                            <div className="title-wrapper">
-                              <h4 className="product-title">
-                                <a href="#" className="product_link">
-                                  Overlock Jumbo bag
-                                </a>
-                              </h4>
-                              <p className="sku">
-                                SKU: <span>036897488221-2</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col has-hover product">
-                      <div className="col-inner">
-                        <div className="box-product has-hover">
-                          <div className="box-image customer-box-image-product">
-                            <a href="#" className="_1gqs block image-zoom">
-                              <img
-                                src="/images/website/product-list_1.png"
-                                className="_8wjh"
-                              />
-                            </a>
-                          </div>
-                          <div className="box-text box-text-products text-left">
-                            <div className="title-wrapper">
-                              <h4 className="product-title">
-                                <a href="#" className="product_link">
-                                  Food Wrap
-                                </a>
-                              </h4>
-                              <p className="sku">
-                                SKU: <span>036897488221-2</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col has-hover product">
-                      <div className="col-inner">
-                        <div className="box-product has-hover">
-                          <div className="box-image customer-box-image-product">
-                            <a href="#" className="_1gqs block image-zoom">
-                              <img
-                                src="/images/website/product-list_2.png"
-                                className="_8wjh"
-                              />
-                            </a>
-                          </div>
-                          <div className="box-text box-text-products text-left">
-                            <div className="title-wrapper">
-                              <h4 className="product-title">
-                                <a href="#" className="product_link">
-                                  Overlock Jumbo bag
-                                </a>
-                              </h4>
-                              <p className="sku">
-                                SKU: <span>036897488221-2</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </div> */}
+                  </Row>
 
                   <Pagination
-                    defaultCurrent={1}
-                    total={27}
-                    defaultPageSize={9}
+                    defaultCurrent={page}
+                    total={products?.totalCount? products.totalCount : 18}
+                    onChange={(page) => setPage(page)}
+                    defaultPageSize={itemPerPage}
                     className="pagination-cntt"
                   />
                 </div>

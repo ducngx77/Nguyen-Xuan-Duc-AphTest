@@ -1,9 +1,14 @@
-import { Col, Drawer, Flex, Input, Menu, Modal, Row } from "antd";
-import { useState } from "react";
+import { Col, Drawer, Dropdown, Flex, Input, Menu, Modal, Row } from "antd";
+import { useEffect, useState } from "react";
 import Logo from "../assets/images/Logo.png";
 import EnFlag from "../assets/icons/flags/en.svg";
+import ViFlag from "../assets/icons/flags/vi.svg";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { dispatch } from "../redux/store";
+import { setLang } from "../redux/lang";
+import { useSelector } from "react-redux";
+ 
 
 function Header() {
   const navigate = useNavigate();
@@ -24,6 +29,36 @@ function Header() {
     navigate(`/search?query=${e}`);
   };
 
+  //claude
+  const onSelect = ({ key }) => {
+    dispatch(setLang(key));
+    sessionStorage.setItem("lang", key); 
+  };
+
+  useEffect(() => {
+    const savedLang = sessionStorage.getItem("lang");
+    if (savedLang) {
+      dispatch(setLang(savedLang));
+    }
+  }, []);
+
+  const languages = [
+    { key: "en", label: "EN", flag: EnFlag },
+    { key: "vi", label: "VI", flag: ViFlag },
+  ];
+
+  const lang = useSelector((state) => state.lang.lang);
+  const current = languages.find((l) => l.key === lang) || languages[0];
+
+  const items = languages.map((l) => ({
+    key: l.key,
+    label: (
+      <Flex align="center" gap={8}>
+        <img className="img-flag" src={l.flag} width={20} />
+        <span>{l.label}</span>
+      </Flex>
+    ),
+  }));
   return (
     <header className="header-wrapper">
       <Row className="header-main" align="middle">
@@ -98,14 +133,13 @@ function Header() {
                 </span>
               </li>
               <li className="html_topbar_right">
-                <Flex
-                  align="center"
-                  gap={8}
-                  className="select-language-container">
-                  <img className="img-flag" src={EnFlag} />
-                  <span>EN</span>
-                  <FontAwesomeIcon icon="fa-solid fa-angle-down" />
-                </Flex>
+                <Dropdown menu={{ items, onClick: onSelect }} trigger={["click"]}>
+                  <Flex align="center" gap={8} className="select-language-container" style={{ cursor: "pointer" }}>
+                    <img className="img-flag" src={current.flag} width={20} />
+                    <span>{current.label}</span>
+                    <FontAwesomeIcon icon="fa-solid fa-angle-down" />
+                  </Flex>
+                </Dropdown>
               </li>
 
               <li className="button_right_header">

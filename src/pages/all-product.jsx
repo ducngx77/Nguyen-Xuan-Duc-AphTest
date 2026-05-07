@@ -2,14 +2,42 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Breadcrumb, Col, Flex, Input, Row } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 
+import { useEffect } from "react";
+import { setProductCategory } from "../redux/category";
+import { useDispatch, useSelector  } from "react-redux";
+import { categoryService } from "../services/categoryService";
+import ParentCategoryCard from "../components/Category/ParentCategoryCard";
+import ChildCategoryCard from "../components/Category/ChildCategoryCard";
+
 function AllProduct() {
   const navigate = useNavigate();
-
+  
   const onSearch = async (e) => {
     if (e) {
       navigate(`/search?query=${e}`);
     }
   };
+
+  const handleNavigate = (e, link) => {
+    e.preventDefault();
+    navigate(`/category/${link.trimStart("/")}`);
+  };
+
+  const productCategory = useSelector((state) => state.category.productCategory);
+  const dispatch = useDispatch();
+
+  async function fetchListCategory() {
+    try {
+      const categoriesData = await categoryService.getListCategory("en");
+      dispatch(setProductCategory(categoriesData.data));
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  }
+
+  useEffect(() => {
+    fetchListCategory();
+  }, []);
 
   return (
     <div id="content" className="content-area">
@@ -144,8 +172,22 @@ function AllProduct() {
               </Col>
             </Row>
           </div>
+
+          {/* Parent category */}
           <div className="_0odn">
-            <div className="_3iwp">
+            <div className="category-grid">
+              {productCategory?.map((element) => (
+                  <ParentCategoryCard
+                    key={element.id}
+                    categoryName={element.categoryName}
+                    thumb={element.thumb}
+                    link={element.link}
+                    id={element.id}
+                  />
+              ))}
+            </div>
+              
+            {/* <div className="_3iwp">
               <a href="#" className="_8ahh block has-hover">
                 <div className="_4rfh image-zoom">
                   <img src="/images/website/market_1.png" className="_5mgw" />
@@ -222,13 +264,43 @@ function AllProduct() {
                   </div>
                 </div>
               </a>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
 
-      <section className="fumed-ref section">
+      {/* Children category */}
+      {productCategory?.filter((element) => element.children?.length > 0).map((element) => (
+        <section className={element.children.length > 2 ? "zeros-vug" : "fumed-ref"} key={element.id} id={`child-${element.id}`}>
+          <div className="section-content relative">
+            <div className="_1nvi">
+              <Row gutter={30}>
+                <Col span={24} className="_5xem">
+
+                  <p className="_5bmu">Our products</p>
+                  <div className="_5xema">
+                    <h3 className="_7kra">{element.categoryName}</h3>
+                    <div className="_4jqna" onClick={(e) => handleNavigate(e, element.link)}> 
+                      View more &nbsp;
+                      <FontAwesomeIcon icon="fa-solid fa-arrow-right" />
+                    </div>
+                  </div>
+                  
+                </Col>
+              </Row>
+            </div>
+            <div className="child-cate-grid">
+              {element.children.length > 0 && element.children.map((child) => (
+                <ChildCategoryCard  key={child.id} categoryName={child.categoryName} thumb={child.thumb} link={child.link} />             
+              ))}  
+            </div>          
+          </div>
+        </section>
+      ))}
+
+      {/* <section className="fumed-ref section">
         <div className="section-content relative">
+
           <div className="_1nvi">
             <Row gutter={30}>
               <Col span={24} className="_5xem">
@@ -238,35 +310,6 @@ function AllProduct() {
             </Row>
           </div>
           <div className="_5tcj">
-            <div className="_6npx">
-              <div className="_2jjl">
-                <div className="_8ghs">
-                  <a href="#" className="block">
-                    <img
-                      src="/images/website/vertical_1.png"
-                      className="_9rtu"
-                    />
-                  </a>
-                </div>
-                <div className="_0cac">
-                  <div className="_9not">
-                    <div className="_2pzh">
-                      <a href="#">Compostable Products</a>
-                    </div>
-                    <div className="_8ynm textLine-5">
-                      Lorem Ipsum is simply dummy text of the printing and
-                      typesetting industry.
-                    </div>
-                  </div>
-                  <div className="_3qdw">
-                    <a href="#" className="button button-outline-green">
-                      <span>View products</span>
-                      <FontAwesomeIcon icon="fa-solid fa-arrow-right" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
             <div className="_6npx">
               <div className="_2jjl">
                 <div className="_8ghs">
@@ -298,9 +341,9 @@ function AllProduct() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
-      <section className="zeros-vug section">
+      {/* <section className="zeros-vug section">
         <div className="section-content relative">
           <div className="_1nvi">
             <Row gutter={30}>
@@ -417,9 +460,9 @@ function AllProduct() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
-      <section className="fumed-ref section">
+      {/* <section className="fumed-ref section">
         <div className="section-content relative">
           <div className="_1nvi">
             <Row gutter={30}>
@@ -491,9 +534,9 @@ function AllProduct() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
-      <section className="zeros-vug section">
+      {/* <section className="zeros-vug section">
         <div className="section-content relative">
           <div className="_1nvi">
             <Row gutter={30}>
@@ -636,9 +679,9 @@ function AllProduct() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
-      <section className="fumed-ref section">
+      {/* <section className="fumed-ref section">
         <div className="section-content relative">
           <div className="_1nvi">
             <Row gutter={30}>
@@ -709,9 +752,9 @@ function AllProduct() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
-      <section className="zeros-vug section">
+      {/* <section className="zeros-vug section">
         <div className="section-content relative">
           <div className="_1nvi">
             <Row gutter={30}>
@@ -793,7 +836,7 @@ function AllProduct() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       <section className="pitched-nap section">
         <div className="section-content relative">
